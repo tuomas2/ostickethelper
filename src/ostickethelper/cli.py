@@ -27,8 +27,14 @@ from ostickethelper.browser import OSTicketBrowser
     default=None,
     help="Path to configuration file. Defaults to config.yaml in script directory.",
 )
+@click.option(
+    "--no-headless",
+    is_flag=True,
+    default=False,
+    help="Run browser in visible (non-headless) mode for debugging.",
+)
 @click.pass_context
-def cli(ctx, config_path: Optional[str]) -> None:
+def cli(ctx, config_path: Optional[str], no_headless: bool) -> None:
     """
     OSTicket Helper - Manage OSTicket tickets.
 
@@ -36,6 +42,7 @@ def cli(ctx, config_path: Optional[str]) -> None:
     """
     ctx.ensure_object(dict)
     ctx.obj["config_path"] = config_path
+    ctx.obj["no_headless"] = no_headless
 
 
 @cli.command("list")
@@ -66,6 +73,9 @@ def list_tickets(ctx, status: str, user: Optional[str]) -> None:
         strings = app_config.strings
         cli_strings = strings.get("cli", {})
         fmt_strings = strings.get("formatter", {})
+
+        if ctx.obj["no_headless"]:
+            app_config.osticket.headless = False
 
         click.echo(cli_strings.get("logging_in", "Logging in to OSTicket..."), err=True)
 
@@ -125,6 +135,9 @@ def read(ctx, ticket_ids: tuple[str, ...], no_download: bool, no_pdf: bool,
         strings = app_config.strings
         cli_strings = strings.get("cli", {})
         fmt_strings = strings.get("formatter", {})
+
+        if ctx.obj["no_headless"]:
+            app_config.osticket.headless = False
 
         click.echo(cli_strings.get("logging_in", "Logging in to OSTicket..."), err=True)
 
@@ -189,6 +202,9 @@ def resolve(ctx, ticket_ids: tuple[str, ...], message: str) -> None:
         strings = app_config.strings
         cli_strings = strings.get("cli", {})
         fmt_strings = strings.get("formatter", {})
+
+        if ctx.obj["no_headless"]:
+            app_config.osticket.headless = False
 
         click.echo(cli_strings.get("logging_in", "Logging in to OSTicket..."), err=True)
 

@@ -367,32 +367,35 @@ class OSTicketBrowser:
             # Wait for page to fully load
             page.wait_for_load_state("networkidle", timeout=15000)
 
-            # Find and click the editor
-            editor = page.get_by_role("cell", name="HTML Format Text Color Font").get_by_label("Rich text editor")
-            editor.wait_for(state="visible", timeout=10000)
-            editor.click()
-
-            # Wait and use keyboard.type() directly
-            time.sleep(0.5)
-            page.keyboard.type(message, delay=20)
+            # Set reply message via Redactor editor API.
+            # Redactor stores content in a contenteditable div but validates
+            # against the hidden textarea. source.setCode() only updates the
+            # editor, so we must also set the textarea value directly.
+            page.wait_for_selector('textarea#response', state='attached', timeout=10000)
+            page.evaluate(
+                '''(msg) => {
+                    const html = '<p>' + msg + '</p>';
+                    const r = $('textarea#response').data('redactor');
+                    r.source.setCode(html);
+                    $('textarea#response').val(html);
+                }''',
+                message,
+            )
 
             # Change status to Resolved (use list for selectOption)
             page.locator('select[name="reply_status_id"]').select_option(["Resolved"])
 
-            # Submit the reply
+            # Submit the reply and wait for navigation away from ticket page.
+            # After success, URL changes from tickets.php?id=X to e.g.
+            # tickets.php#reply or tickets.php?queue=1.
+            ticket_url = page.url
             page.get_by_role("button", name="Post Reply").click()
+            page.wait_for_function(
+                f'() => window.location.href !== "{ticket_url}"',
+                timeout=30000,
+            )
 
-            # Wait for redirect to ticket list (URL changes after successful submit)
-            # The page navigates to tickets.php#reply after success
-            page.wait_for_url("**/tickets.php**", timeout=15000)
-            page.wait_for_load_state("networkidle", timeout=10000)
-
-            # Check for success message
-            if page.locator("text=Reply posted successfully").count() > 0:
-                return True
-
-            # Fallback - if we're on tickets list, it worked
-            return "tickets.php" in page.url
+            return True
 
         except Exception as e:
             print(f"Error resolving ticket: {e}")
