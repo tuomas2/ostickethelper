@@ -1,6 +1,7 @@
 """Configuration handling for OSTicket Helper."""
 
 import copy
+import os
 import subprocess
 from dataclasses import dataclass, field
 from importlib.resources import files
@@ -116,8 +117,7 @@ def load_config(config_path: Optional[str] = None, work_dir: Optional[Path] = No
 
     osticket_data = merged["osticket"]
 
-    required_fields = ["url", "username", "secrets_file"]
-    for field_name in required_fields:
+    for field_name in ["url", "username"]:
         if field_name not in osticket_data:
             raise ValueError(f"Missing required field 'osticket.{field_name}' in config")
 
@@ -130,14 +130,29 @@ def load_config(config_path: Optional[str] = None, work_dir: Optional[Path] = No
     else:
         resolved_work_dir = Path(work_dir).resolve()
 
-    # Resolve secrets file path relative to work_dir
-    secrets_path = resolved_work_dir / osticket_data["secrets_file"]
+    # Resolve password from multiple sources (first match wins):
+    # 1. OSTICKET_PASSWORD environment variable
+    # 2. password field in config
+    # 3. secrets_file (plain text or GPG-encrypted)
+    password = os.environ.get("OSTICKET_PASSWORD")
 
-    if not secrets_path.exists():
-        raise FileNotFoundError(f"Secrets file not found: {secrets_path}")
+    if not password and "password" in osticket_data:
+        password = osticket_data["password"]
 
-    # Decrypt password
-    password = decrypt_gpg_file(secrets_path)
+    if not password and "secrets_file" in osticket_data:
+        secrets_path = resolved_work_dir / osticket_data["secrets_file"]
+        if not secrets_path.exists():
+            raise FileNotFoundError(f"Secrets file not found: {secrets_path}")
+        if secrets_path.suffix == ".gpg":
+            password = decrypt_gpg_file(secrets_path)
+        else:
+            password = secrets_path.read_text(encoding="utf-8").strip()
+
+    if not password:
+        raise ValueError(
+            "No password configured. Set OSTICKET_PASSWORD environment variable, "
+            "add 'password' to config, or provide 'secrets_file'."
+        )
 
     # Resolve paths relative to work_dir
     inbox_dir = resolved_work_dir / osticket_data.get("inbox_dir", "inbox/osticket")

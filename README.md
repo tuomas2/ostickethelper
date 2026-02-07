@@ -44,7 +44,9 @@ Create a YAML config file (see `src/ostickethelper/defaults.yaml` for all availa
 osticket:
   url: "https://your-osticket-instance.com"
   username: "agent"
-  secrets_file: "secrets/osticket-password.txt.gpg"
+  password: "your-password"              # option 1: direct password
+  # secrets_file: "secrets/password.txt" # option 2: plain text file
+  # secrets_file: "secrets/pw.txt.gpg"   # option 3: GPG-encrypted file
   headless: true
   slow_mo: 0
   inbox_dir: "inbox/osticket"
@@ -56,13 +58,25 @@ osticket:
 
 All relative paths are resolved from the working directory (where you run the command).
 
+### Authentication
+
+The password can be provided in several ways (first match wins):
+
+1. **Environment variable**: `OSTICKET_PASSWORD=secret ostickethelper list`
+2. **Config field**: `password: "your-password"` in the config file
+3. **Plain text file**: `secrets_file: "path/to/password.txt"` — reads the file contents
+4. **GPG-encrypted file**: `secrets_file: "path/to/password.txt.gpg"` — decrypts with `gpg --decrypt`
+
+At least one of these must be configured.
+
 ### Configuration fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
 | `url` | Yes | OSTicket base URL |
 | `username` | Yes | Agent username |
-| `secrets_file` | Yes | Path to GPG-encrypted password file |
+| `password` | No* | Password (plain text in config) |
+| `secrets_file` | No* | Path to password file (plain text or `.gpg`) |
 | `headless` | No | Run browser headless (default: `true`) |
 | `slow_mo` | No | Slow down browser actions in ms (default: `0`) |
 | `inbox_dir` | No | Directory for downloaded tickets (default: `inbox/osticket`) |
@@ -70,6 +84,8 @@ All relative paths are resolved from the working directory (where you run the co
 | `receipts_dir` | No | Archive directory for receipts (default: `receipts`) |
 | `temp_dir` | No | Temporary directory for Typst compilation (default: `.tmp`) |
 | `template_path` | No | Custom Typst template (default: built-in `template.typ`) |
+
+\*One of `password`, `secrets_file`, or `OSTICKET_PASSWORD` env var is required.
 
 ## String customization (localization)
 

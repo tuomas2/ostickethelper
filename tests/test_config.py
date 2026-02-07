@@ -1,5 +1,6 @@
 """Tests for config.py."""
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,6 +15,17 @@ VALID_CONFIG = {
         "url": "https://example.com/",
         "username": "admin",
         "secrets_file": "secrets/osticket-password.txt.gpg",
+        "headless": True,
+        "slow_mo": 100,
+        "inbox_dir": "inbox/osticket",
+    }
+}
+
+VALID_CONFIG_PASSWORD = {
+    "osticket": {
+        "url": "https://example.com/",
+        "username": "admin",
+        "password": "direct-password",
         "headless": True,
         "slow_mo": 100,
         "inbox_dir": "inbox/osticket",
@@ -97,13 +109,12 @@ class TestLoadConfig:
         with pytest.raises(ValueError, match="osticket.username"):
             load_config(str(config_file), work_dir=tmp_path)
 
-    @patch("ostickethelper.config.decrypt_gpg_file", return_value="secret-password")
-    def test_missing_required_field_secrets_file(self, mock_gpg, tmp_path):
+    def test_missing_password_entirely(self, tmp_path):
         config_file = tmp_path / "config.yaml"
         data = {"osticket": {"url": "https://example.com", "username": "admin"}}
         _write_yaml(config_file, data)
 
-        with pytest.raises(ValueError, match="osticket.secrets_file"):
+        with pytest.raises(ValueError, match="No password configured"):
             load_config(str(config_file), work_dir=tmp_path)
 
     def test_missing_config_file(self):
@@ -262,3 +273,90 @@ class TestLoadConfig:
 
         result = load_config(str(config_file), work_dir=tmp_path)
         assert result.osticket.logo_path is None
+
+
+class TestPasswordSources:
+    """Test different password authentication methods."""
+
+    def test_password_from_config(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        _write_yaml(config_file, VALID_CONFIG_PASSWORD)
+
+        result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "direct-password"
+
+    def test_password_from_env_var(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        data = {"osticket": {"url": "https://example.com", "username": "admin"}}
+        _write_yaml(config_file, data)
+
+        with patch.dict(os.environ, {"OSTICKET_PASSWORD": "env-password"}):
+            result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "env-password"
+
+    def test_env_var_takes_precedence_over_config(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        _write_yaml(config_file, VALID_CONFIG_PASSWORD)
+
+        with patch.dict(os.environ, {"OSTICKET_PASSWORD": "env-password"}):
+            result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "env-password"
+
+    @patch("ostickethelper.config.decrypt_gpg_file", return_value="gpg-password")
+    def test_env_var_takes_precedence_over_secrets_file(self, mock_gpg, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        _write_yaml(config_file, VALID_CONFIG)
+
+        secrets_dir = tmp_path / "secrets"
+        secrets_dir.mkdir()
+        (secrets_dir / "osticket-password.txt.gpg").touch()
+
+        with patch.dict(os.environ, {"OSTICKET_PASSWORD": "env-password"}):
+            result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "env-password"
+        mock_gpg.assert_not_called()
+
+    def test_plain_text_secrets_file(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        data = {
+            "osticket": {
+                "url": "https://example.com",
+                "username": "admin",
+                "secrets_file": "secrets/password.txt",
+            }
+        }
+        _write_yaml(config_file, data)
+
+        secrets_dir = tmp_path / "secrets"
+        secrets_dir.mkdir()
+        (secrets_dir / "password.txt").write_text("plain-password\n")
+
+        result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "plain-password"
+
+    @patch("ostickethelper.config.decrypt_gpg_file", return_value="gpg-password")
+    def test_gpg_secrets_file(self, mock_gpg, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        _write_yaml(config_file, VALID_CONFIG)
+
+        secrets_dir = tmp_path / "secrets"
+        secrets_dir.mkdir()
+        (secrets_dir / "osticket-password.txt.gpg").touch()
+
+        result = load_config(str(config_file), work_dir=tmp_path)
+        assert result.osticket.password == "gpg-password"
+        mock_gpg.assert_called_once()
+
+    def test_missing_secrets_file(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        data = {
+            "osticket": {
+                "url": "https://example.com",
+                "username": "admin",
+                "secrets_file": "secrets/nonexistent.gpg",
+            }
+        }
+        _write_yaml(config_file, data)
+
+        with pytest.raises(FileNotFoundError, match="Secrets file not found"):
+            load_config(str(config_file), work_dir=tmp_path)
