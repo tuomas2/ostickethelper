@@ -152,6 +152,10 @@ Available template variables:
 | `$lbl_message` | Label: "Message" |
 | `$lbl_attachments` | Label: "Attachments" |
 
+## Disclaimer
+
+This project was built with the help of [Claude Code](https://docs.anthropic.com/en/docs/claude-code). The code has only been cursorily reviewed by the author. Use at your own risk.
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE).
