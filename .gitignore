@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Config & secrets
+config.yaml
+*.gpg
+
+# Runtime
+.tmp/
+.env
+inbox/

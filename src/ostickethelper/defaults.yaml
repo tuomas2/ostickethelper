@@ -1,0 +1,56 @@
+# Default configuration for OSTicket Helper.
+# These values are used when not overridden by the user's config file.
+
+osticket:
+  headless: true
+  slow_mo: 0
+  inbox_dir: "inbox/osticket"
+
+strings:
+  pdf:
+    title: ""
+    lang: "en"
+    ticket: "Ticket"
+    subject: "Subject"
+    sender: "Sender"
+    created: "Created"
+    processed: "Processed"
+    message: "Message"
+    attachments: "Attachments"
+    no_attachments: "No attachments."
+  archiver:
+    compressed: "compressed"
+    original: "original"
+    source: "Source"
+    target: "Target"
+    pages: "Pages"
+    summary: "Summary (Typst)"
+    default_label: "ticket"
+    inbox_not_found: "Ticket inbox directory not found"
+    already_exists: "receipt already exists"
+    use_force: "Use --force to overwrite."
+  cli:
+    logging_in: "Logging in to OSTicket..."
+    fetching: "Fetching {status} tickets..."
+    reading: "Reading ticket {tid}..."
+    downloading: "Downloading {count} attachments..."
+    generating: "Generating receipt..."
+    generation_failed: "Receipt generation failed"
+    resolving: "Resolving ticket {tid}..."
+    error: "Error"
+  formatter:
+    no_open_tickets: "No open tickets."
+    open_tickets_header: "Open tickets"
+    total: "Total: {count} tickets"
+    ticket: "Ticket"
+    subject: "Subject"
+    sender: "Sender"
+    email: "Email"
+    created: "Created"
+    status: "Status"
+    message: "Message"
+    attachments: "Attachments"
+    no_attachments: "No attachments"
+    resolve_header: "Ticket resolution"
+    all_resolved: "All {count} tickets resolved successfully."
+    resolve_summary: "Resolved: {succeeded}, failed: {failed}"

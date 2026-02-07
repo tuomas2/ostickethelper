@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "ostickethelper"
+version = "0.1.0"
+description = "CLI tool for managing OSTicket tickets"
+authors = ["Tuomas Airaksinen <tuomas.airaksinen@gmail.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/tuomas2/ostickethelper"
+keywords = ["osticket", "cli", "automation", "playwright"]
+packages = [{include = "ostickethelper", from = "src"}]
+
+[tool.poetry.scripts]
+ostickethelper = "ostickethelper.cli:cli"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+playwright = ">=1.40.0"
+click = ">=8.1.0"
+pyyaml = ">=6.0"
+Pillow = ">=10.0.0"
+pikepdf = ">=8.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
