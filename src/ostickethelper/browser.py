@@ -386,12 +386,19 @@ class OSTicketBrowser:
             True if successful, False otherwise.
         """
         page = self._page
-        page.goto(f"{self.config.url}/scp/tickets.php?id={ticket_id}")
+        # Wait only for the DOM to be parsed, not the full "load" event. As with
+        # read_ticket(), slow/non-essential subresources (analytics, long-polling)
+        # can prevent "load" from firing within the timeout on support.andbible.org.
+        page.goto(
+            f"{self.config.url}/scp/tickets.php?id={ticket_id}",
+            wait_until="domcontentloaded",
+        )
         time.sleep(0.5)
 
         try:
-            # Wait for page to fully load
-            page.wait_for_load_state("networkidle", timeout=15000)
+            # Don't wait for "networkidle" — long-polling/analytics keep the
+            # network busy, so it never settles within the timeout. The explicit
+            # wait_for_selector below is the actual readiness check we need.
 
             # Set reply message via Redactor editor API.
             # Redactor stores content in a contenteditable div but validates
