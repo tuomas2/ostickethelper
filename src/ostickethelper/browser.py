@@ -178,7 +178,14 @@ class OSTicketBrowser:
             Ticket object with full details.
         """
         page = self._page
-        page.goto(f"{self.config.url}/scp/tickets.php?id={ticket_id}")
+        # Wait only for the DOM to be parsed, not the full "load" event. The
+        # ticket detail is read straight from the DOM below, so we don't need
+        # to wait for slow/non-essential subresources (images, analytics,
+        # long-polling) that can prevent "load" from firing within the timeout.
+        page.goto(
+            f"{self.config.url}/scp/tickets.php?id={ticket_id}",
+            wait_until="domcontentloaded",
+        )
         time.sleep(0.5)
 
         # Get ticket number from heading
