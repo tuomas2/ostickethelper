@@ -51,7 +51,6 @@ osticket:
   slow_mo: 0
   inbox_dir: "inbox/osticket"
   logo_path: "resources/logo.png"       # optional
-  receipts_dir: "receipts"             # optional, default: "receipts"
   temp_dir: ".tmp"                      # optional, default: ".tmp"
   template_path: "my-template.typ"      # optional, default: built-in template
 ```
@@ -81,7 +80,6 @@ At least one of these must be configured.
 | `slow_mo` | No | Slow down browser actions in ms (default: `0`) |
 | `inbox_dir` | No | Directory for downloaded tickets (default: `inbox/osticket`) |
 | `logo_path` | No | Logo image for PDF receipts (omit for no logo) |
-| `receipts_dir` | No | Archive directory for receipts (default: `receipts`) |
 | `temp_dir` | No | Temporary directory for Typst compilation (default: `.tmp`) |
 | `template_path` | No | Custom Typst template (default: built-in `template.typ`) |
 
@@ -115,14 +113,26 @@ ostickethelper --config config.yaml list
 # List closed tickets
 ostickethelper --config config.yaml list --status closed
 
+# List only tickets from a specific user
+ostickethelper --config config.yaml list --user "John Doe"
+
 # Read tickets and generate PDF receipts
 ostickethelper --config config.yaml read 339 340
 
 # Read without generating PDF
 ostickethelper --config config.yaml read 339 --no-pdf
 
+# Re-read and overwrite an already-generated PDF
+ostickethelper --config config.yaml read 339 --force
+
 # Resolve tickets
 ostickethelper --config config.yaml resolve 339 340 --message "Paid"
+```
+
+`--no-headless` is a global option (place it before the subcommand) that runs Chromium with a visible window — useful for debugging when the SCP scraping breaks after an OSTicket update:
+
+```bash
+ostickethelper --config config.yaml --no-headless read 339
 ```
 
 ## PDF template customization
@@ -133,9 +143,11 @@ Available template variables:
 
 | Variable | Description |
 |----------|-------------|
-| `$pdf_title` | Document title (from `strings.pdf.title`) |
+| `$document_title` | Document title (page/PDF metadata, e.g. `OSTicket #339`) |
+| `$title_block` | Rendered title heading (Typst markup, includes `strings.pdf.title` if set) |
 | `$ticket_id` | Ticket ID |
 | `$ticket_number` | Ticket number |
+| `$ticket_url` | Ticket URL |
 | `$logo_block` | Typst `#image(...)` block, or empty if no logo |
 | `$subject` | Ticket subject (Typst-escaped) |
 | `$user_name` | Sender name (Typst-escaped) |
